@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from data_manager import DataManager
 from models import db, Movie, User
 import os
@@ -6,6 +6,7 @@ import requests
 from dotenv import load_dotenv
 load_dotenv()
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 OMDB_KEY = os.environ.get('OMDB_API_KEY')
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'data/movies.db')}"
@@ -25,14 +26,26 @@ def add_user():
         data_manager.create_user(name)
     return redirect(url_for('home'))
 
+
+@app.route('/user/delete', methods=['POST'])
+def delete_user():
+    name = request.form.get('name')
+    if not name:
+        flash("Please enter a user name to delete")
+        return redirect(url_for('home'))
+    ok = data_manager.delete_user(name)
+    if not ok:
+        flash(f"User '{name}' not found")
+    else:
+        flash(f"User '{name}' deleted")
+    return redirect(url_for('home'))
+
 @app.route('/users/<int:user_id>/movies', methods=['GET'])
 def user_movie(user_id):
     movies = data_manager.get_movies(user_id)
     user = User.query.get(user_id)
     return render_template('movies.html', movies=movies, user=user)
 
-
-from flask import flash
 
 @app.route('/users/<int:user_id>/movies', methods=['POST'])
 def add_movie(user_id):

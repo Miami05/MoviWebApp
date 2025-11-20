@@ -12,6 +12,15 @@ class DataManager:
         """Return a list of all users."""
         return User.query.all()
 
+    def delete_user(self, name):
+        user = User.query.filter_by(name=name).first()
+        if user is None:
+            return False
+        Movie.query.filter_by(user_id=user.id).delete()
+        db.session.delete(user)
+        db.session.commit()
+        return True
+
     def get_movies(self, user_id):
         """Return a list of all movies for a specific user."""
         return Movie.query.filter_by(user_id=user_id).all()
